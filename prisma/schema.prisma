@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id          String @id @default(uuid())
+  totalAmount Float  @map("total_amount")
+  totalItems  Int    @map("total_items")
+
+  status         OrderStatus @default(PENDING)
+  paid           Boolean     @default(false)
+  paidAt         DateTime?   @map("paid_at")
+  stripePaymentId String?     @map("stripe_payment_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  OrderItem    OrderItem[]
+  OrderReceipt OrderReceipt?
+
+  @@map("order")
+}
+
+model OrderItem {
+  id        String @id @default(uuid())
+  productId Int    @map("product_id")
+  quantity  Int
+  price     Float
+
+  Order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String? @map("order_id")
+
+  @@map("order_item")
+}
+
+model OrderReceipt {
+  id String @id @default(uuid())
+
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String @unique @map("order_id")
+
+  receiptUrl String @map("receipt_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
